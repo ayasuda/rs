@@ -1,0 +1,149 @@
+openapi: 3.0.3
+info:
+  title: Ramen Simulator API
+  version: 0.1.0
+  description: MVP backend API for Ramen Simulator
+
+servers:
+  - url: http://localhost:8080
+
+paths:
+  /recipes:
+    post:
+      summary: レシピを作成する
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeInput'
+      responses:
+        '201':
+          description: 作成されたレシピID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recipeId:
+                    type: string
+
+  /recipes/{id}/evaluate:
+    get:
+      summary: 指定したレシピを評価する（10軸）
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 評価結果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evaluation'
+
+  /customers:
+    get:
+      summary: 顧客カテゴリの一覧を取得する
+      responses:
+        '200':
+          description: 顧客カテゴリの配列
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomerCategory'
+
+  /match:
+    post:
+      summary: レシピと顧客カテゴリをマッチングして評価スコアを返す
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchingRequest'
+      responses:
+        '200':
+          description: 満足度スコアとコメント
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchingResult'
+
+components:
+  schemas:
+    RecipeInput:
+      type: object
+      properties:
+        name:
+          type: string
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/Component'
+      required: [name, components]
+
+    Component:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [noodle, soup, tare, oil, topping, plating]
+        id:
+          type: string
+      required: [type, id]
+
+    Evaluation:
+      type: object
+      properties:
+        recipeId:
+          type: string
+        metrics:
+          type: object
+          additionalProperties:
+            type: integer
+            format: uint16
+      required: [recipeId, metrics]
+
+    CustomerCategory:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        preference:
+          type: object
+          additionalProperties:
+            type: integer
+        weight:
+          type: object
+          additionalProperties:
+            type: number
+      required: [id, name, preference, weight]
+
+    MatchingRequest:
+      type: object
+      properties:
+        customerId:
+          type: string
+        recipeId:
+          type: string
+      required: [customerId, recipeId]
+
+    MatchingResult:
+      type: object
+      properties:
+        customerId:
+          type: string
+        recipeId:
+          type: string
+        score:
+          type: number
+        comment:
+          type: string

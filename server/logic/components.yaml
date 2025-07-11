@@ -1,0 +1,79 @@
+- id: noodle-thick
+  type: noodle
+  label: 太麺
+  contribution:
+    Umami: 2000
+    Fat: 800
+    Volume: 3000
+
+- id: noodle-thin
+  type: noodle
+  label: 細麺
+  contribution:
+    Umami: 1000
+    Volume: 2000
+
+- id: soup-tonkotsu
+  type: soup
+  label: 濃厚とんこつスープ
+  contribution:
+    Umami: 10000
+    Fat: 5000
+    Harmony: 3000
+
+- id: soup-shoyu
+  type: soup
+  label: 醤油スープ
+  contribution:
+    Umami: 8000
+    Salt: 4000
+    Harmony: 2500
+
+- id: tare-rich-soy
+  type: tare
+  label: 濃口醤油だれ
+  contribution:
+    Salt: 7000
+    Umami: 3000
+    Sweet: 500
+
+- id: oil-black-garlic
+  type: oil
+  label: 黒マー油
+  contribution:
+    Aroma: 9000
+    Fat: 4000
+    Creative: 3000
+
+- id: topping-chashu
+  type: topping
+  label: 炙りチャーシュー
+  contribution:
+    Umami: 5000
+    Fat: 3000
+    Volume: 2000
+    Appearance: 1500
+
+- id: topping-egg
+  type: topping
+  label: 味玉
+  contribution:
+    Sweet: 1000
+    Umami: 2000
+    Appearance: 1200
+
+- id: topping-green-onion
+  type: topping
+  label: 青ねぎ
+  contribution:
+    Aroma: 2000
+    Spicy: 500
+    Appearance: 1000
+
+- id: plating-black-bowl
+  type: plating
+  label: 黒どんぶり
+  contribution:
+    Appearance: 3000
+    Creative: 500
+
