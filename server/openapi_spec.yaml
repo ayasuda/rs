@@ -1,0 +1,511 @@
+openapi: 3.0.3
+info:
+  title: Ramen Simulator API
+  description: API for the Ramen Shop Simulator game prototype
+  version: 1.0.0
+  contact:
+    name: Ramen Simulator Team
+    email: dev@ramen-simulator.com
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /recipes/evaluate:
+    post:
+      summary: Evaluate a ramen recipe
+      description: Calculate evaluation scores for a ramen recipe across 10 evaluation axes
+      operationId: evaluateRecipe
+      tags:
+        - Recipe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recipe'
+      responses:
+        '200':
+          description: Recipe evaluation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeEvaluation'
+        '400':
+          description: Invalid recipe data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /customers/categories:
+    get:
+      summary: Get all customer categories
+      description: Retrieve list of all customer categories with their characteristics
+      operationId: getCustomerCategories
+      tags:
+        - Customer
+      responses:
+        '200':
+          description: List of customer categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomerCategory'
+
+  /customers/categories/{categoryId}:
+    get:
+      summary: Get specific customer category
+      description: Retrieve detailed information about a specific customer category
+      operationId: getCustomerCategory
+      tags:
+        - Customer
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          description: ID of the customer category
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+      responses:
+        '200':
+          description: Customer category details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerCategory'
+        '404':
+          description: Customer category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /customers/evaluate:
+    post:
+      summary: Evaluate customer satisfaction
+      description: Calculate customer satisfaction score based on recipe evaluation and customer preferences
+      operationId: evaluateCustomerSatisfaction
+      tags:
+        - Customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerEvaluationRequest'
+      responses:
+        '200':
+          description: Customer satisfaction evaluation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerSatisfaction'
+        '400':
+          description: Invalid evaluation request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /pricing/calculate:
+    post:
+      summary: Calculate recipe cost and suggested pricing
+      description: Calculate the base cost of a recipe and suggest pricing based on ingredients
+      operationId: calculatePricing
+      tags:
+        - Pricing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recipe'
+      responses:
+        '200':
+          description: Pricing calculation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingInfo'
+        '400':
+          description: Invalid recipe for pricing calculation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Recipe:
+      type: object
+      required:
+        - noodles
+        - soup
+        - sauce
+        - oil
+        - toppings
+        - presentation
+      properties:
+        noodles:
+          $ref: '#/components/schemas/Ingredient'
+        soup:
+          $ref: '#/components/schemas/Ingredient'
+        sauce:
+          $ref: '#/components/schemas/Ingredient'
+        oil:
+          $ref: '#/components/schemas/Ingredient'
+        toppings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ingredient'
+          minItems: 0
+          maxItems: 10
+        presentation:
+          $ref: '#/components/schemas/Ingredient'
+        cookingSkillLevel:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 10.0
+          default: 5.0
+          description: Cooking skill level affecting recipe evaluation (0-10)
+
+    Ingredient:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the ingredient
+          example: "chicken_broth"
+        name:
+          type: string
+          description: Display name of the ingredient
+          example: "鶏白湯スープ"
+        category:
+          type: string
+          enum: [noodles, soup, sauce, oil, topping, presentation]
+          description: Category of the ingredient
+
+    RecipeEvaluation:
+      type: object
+      required:
+        - scores
+        - totalCost
+      properties:
+        scores:
+          $ref: '#/components/schemas/EvaluationScores'
+        totalCost:
+          type: integer
+          minimum: 0
+          description: Base cost of the recipe in yen
+        adjustedScores:
+          $ref: '#/components/schemas/EvaluationScores'
+          description: Scores adjusted for cooking skill
+
+    EvaluationScores:
+      type: object
+      required:
+        - umami
+        - aroma
+        - saltiness
+        - fat
+        - sweetness
+        - spiciness
+        - originality
+        - visual
+        - volume
+        - harmony
+      properties:
+        umami:
+          type: integer
+          minimum: 0
+          maximum: 65535
+          description: Umami intensity (0-65535)
+        aroma:
+          type: integer
+          minimum: 0
+          maximum: 65535
+          description: Aroma strength (0-65535)
+        saltiness:
+          type: integer
+          minimum: 0
+          maximum: 65535
+          description: Salt level (0-65535)
+        fat:
+          type: integer
+          minimum: 0
+          maximum: 65535
+          description: Fat content richness (0-65535)
+        sweetness:
+          type: integer
+          minimum: 0
+          maximum: 65535
+          description: Sweetness level (0-65535)
+        spiciness:
+          type: integer
+          minimum: 0
+          maximum: 65535
+          description: Spiciness/stimulation level (0-65535)
+        originality:
+          type: integer
+          minimum: 0
+          maximum: 65535
+          description: Creativity/uniqueness (0-65535)
+        visual:
+          type: integer
+          minimum: 0
+          maximum: 65535
+          description: Visual appeal (0-65535)
+        volume:
+          type: integer
+          minimum: 0
+          maximum: 65535
+          description: Volume/portion size feeling (0-65535)
+        harmony:
+          type: integer
+          minimum: 0
+          maximum: 65535
+          description: Balance and harmony of all elements (0-65535)
+
+    CustomerCategory:
+      type: object
+      required:
+        - id
+        - name
+        - preferenceVector
+        - weightVector
+        - baseBudget
+        - timeSlots
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Customer category ID (1-10)
+        name:
+          type: string
+          description: Category name
+          example: "大学生"
+        preferenceVector:
+          $ref: '#/components/schemas/EvaluationScores'
+          description: Ideal preference values for each evaluation axis
+        weightVector:
+          $ref: '#/components/schemas/PreferenceWeights'
+          description: Importance weights for each evaluation axis
+        baseBudget:
+          type: integer
+          minimum: 0
+          description: Base budget in yen
+        timeSlots:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeSlot'
+          description: Preferred visiting time slots
+        characteristics:
+          type: array
+          items:
+            type: string
+          description: List of characteristic traits
+          example: ["低予算", "ボリューム重視", "友人と来店"]
+
+    PreferenceWeights:
+      type: object
+      required:
+        - umami
+        - aroma
+        - saltiness
+        - fat
+        - sweetness
+        - spiciness
+        - originality
+        - visual
+        - volume
+        - harmony
+      properties:
+        umami:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 2.0
+        aroma:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 2.0
+        saltiness:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 2.0
+        fat:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 2.0
+        sweetness:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 2.0
+        spiciness:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 2.0
+        originality:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 2.0
+        visual:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 2.0
+        volume:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 2.0
+        harmony:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 2.0
+
+    TimeSlot:
+      type: object
+      required:
+        - period
+        - preference
+      properties:
+        period:
+          type: string
+          enum: [morning, lunch, afternoon, evening, night, late_night]
+          description: Time period of the day
+        preference:
+          type: string
+          enum: [high, medium, low, none]
+          description: Preference level for this time slot
+          
+    CustomerEvaluationRequest:
+      type: object
+      required:
+        - recipeEvaluation
+        - customerCategoryId
+        - price
+      properties:
+        recipeEvaluation:
+          $ref: '#/components/schemas/RecipeEvaluation'
+        customerCategoryId:
+          type: integer
+          minimum: 1
+          maximum: 10
+        price:
+          type: integer
+          minimum: 0
+          description: Price of the ramen in yen
+        reputationBonus:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          default: 0.0
+          description: Shop reputation bonus (0.0-1.0)
+
+    CustomerSatisfaction:
+      type: object
+      required:
+        - satisfactionScore
+        - willReturn
+        - priceAcceptable
+      properties:
+        satisfactionScore:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 100.0
+          description: Overall satisfaction score (0-100)
+        willReturn:
+          type: boolean
+          description: Whether customer will likely return
+        priceAcceptable:
+          type: boolean
+          description: Whether the price is within customer's budget
+        effectiveBudget:
+          type: integer
+          minimum: 0
+          description: Customer's effective budget including reputation bonus
+        detailedScores:
+          type: object
+          properties:
+            tasteMatch:
+              type: number
+              format: float
+              minimum: 0.0
+              maximum: 100.0
+            priceValue:
+              type: number
+              format: float
+              minimum: 0.0
+              maximum: 100.0
+
+    PricingInfo:
+      type: object
+      required:
+        - baseCost
+        - suggestedPrice
+        - profitMargin
+      properties:
+        baseCost:
+          type: integer
+          minimum: 0
+          description: Base cost to make the recipe in yen
+        suggestedPrice:
+          type: integer
+          minimum: 0
+          description: Suggested selling price in yen
+        profitMargin:
+          type: number
+          format: float
+          minimum: 0.0
+          description: Profit margin as percentage (0.0-1.0)
+        costBreakdown:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Cost breakdown by ingredient category
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error details
+
+tags:
+  - name: Recipe
+    description: Recipe creation and evaluation operations
+  - name: Customer
+    description: Customer category and satisfaction operations  
+  - name: Pricing
+    description: Pricing calculation operations
