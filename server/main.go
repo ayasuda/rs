@@ -14,6 +14,12 @@ import (
 var openAPISpec embed.FS
 
 func main() {
+	// Load master data from CSV files
+	fmt.Println("Loading master data from CSV files...")
+	if err := handlers.LoadMasterData(); err != nil {
+		log.Fatal("Failed to load master data:", err)
+	}
+
 	// Set Gin mode
 	gin.SetMode(gin.ReleaseMode)
 

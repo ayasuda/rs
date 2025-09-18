@@ -302,4 +302,8 @@ func (s *Server) SetupRoutes(r *gin.Engine) {
 
 	// Pricing routes
 	r.POST("/pricing/calculate", s.CalculatePricing)
+
+	// Master data routes
+	r.GET("/master/ingredients", s.GetMasterIngredients)
+	r.GET("/master/customers", s.GetMasterCustomers)
 }
