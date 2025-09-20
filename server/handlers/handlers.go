@@ -6,6 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	openapi "github.com/ayasuda/rs/server/gen"
+	"github.com/ayasuda/rs/server/evaluation"
+	"github.com/ayasuda/rs/server/model"
 )
 
 // Server implements the OpenAPI ServerInterface using Gin
@@ -164,48 +166,16 @@ func (s *Server) EvaluateRecipe(c *gin.Context) {
 		return
 	}
 
-	// Mock evaluation - simple calculation based on ingredients
-	baseScores := openapi.EvaluationScores{
-		Umami:       35000,
-		Aroma:       17000,
-		Saltiness:   17000,
-		Fat:         32000,
-		Sweetness:   8000,
-		Spiciness:   3500,
-		Originality: 9000,
-		Visual:      12500,
-		Volume:      12000,
-		Harmony:     27000,
-	}
+	// Convert OpenAPI recipe to model recipe
+	modelRecipe := convertToModelRecipe(recipe)
 
-	// Apply cooking skill bonus (3% + 5% for harmony)
-	skillLevel := 5.0
-	if recipe.CookingSkillLevel != nil {
-		skillLevel = float64(*recipe.CookingSkillLevel)
-	}
-	skillBonus := 1.0 + (skillLevel/100.0)*3.0
-	harmonyBonus := 1.0 + (skillLevel/100.0)*8.0
+	// Use the evaluation package to evaluate the recipe
+	modelEvaluation := evaluation.EvaluateRecipe(modelRecipe, masterIngredients)
 
-	adjustedScores := openapi.EvaluationScores{
-		Umami:       int(float64(baseScores.Umami) * skillBonus),
-		Aroma:       int(float64(baseScores.Aroma) * skillBonus),
-		Saltiness:   int(float64(baseScores.Saltiness) * skillBonus),
-		Fat:         int(float64(baseScores.Fat) * skillBonus),
-		Sweetness:   int(float64(baseScores.Sweetness) * skillBonus),
-		Spiciness:   int(float64(baseScores.Spiciness) * skillBonus),
-		Originality: int(float64(baseScores.Originality) * skillBonus),
-		Visual:      int(float64(baseScores.Visual) * skillBonus),
-		Volume:      int(float64(baseScores.Volume) * skillBonus),
-		Harmony:     int(float64(baseScores.Harmony) * harmonyBonus),
-	}
+	// Convert back to OpenAPI format
+	openAPIEvaluation := convertToOpenAPIEvaluation(modelEvaluation)
 
-	evaluation := openapi.RecipeEvaluation{
-		Scores:         baseScores,
-		TotalCost:      420,
-		AdjustedScores: &adjustedScores,
-	}
-
-	c.JSON(http.StatusOK, evaluation)
+	c.JSON(http.StatusOK, openAPIEvaluation)
 }
 
 // EvaluateCustomerSatisfaction handles POST /customers/evaluate
@@ -306,4 +276,63 @@ func (s *Server) SetupRoutes(r *gin.Engine) {
 	// Master data routes
 	r.GET("/master/ingredients", s.GetMasterIngredients)
 	r.GET("/master/customers", s.GetMasterCustomers)
+}
+
+// convertToModelRecipe converts OpenAPI Recipe to model Recipe
+func convertToModelRecipe(openAPIRecipe openapi.Recipe) model.Recipe {
+	modelRecipe := model.Recipe{
+		Noodles:           convertToModelIngredient(openAPIRecipe.Noodles),
+		Soup:              convertToModelIngredient(openAPIRecipe.Soup),
+		Sauce:             convertToModelIngredient(openAPIRecipe.Sauce),
+		Oil:               convertToModelIngredient(openAPIRecipe.Oil),
+		Presentation:      convertToModelIngredient(openAPIRecipe.Presentation),
+		CookingSkillLevel: openAPIRecipe.CookingSkillLevel,
+	}
+
+	// Convert toppings
+	for _, topping := range openAPIRecipe.Toppings {
+		modelRecipe.Toppings = append(modelRecipe.Toppings, convertToModelIngredient(topping))
+	}
+
+	return modelRecipe
+}
+
+// convertToModelIngredient converts OpenAPI Ingredient to model Ingredient
+func convertToModelIngredient(openAPIIngredient openapi.Ingredient) model.Ingredient {
+	return model.Ingredient{
+		ID:       openAPIIngredient.Id,
+		Name:     openAPIIngredient.Name,
+		Category: string(*openAPIIngredient.Category),
+	}
+}
+
+// convertToOpenAPIEvaluation converts model RecipeEvaluation to OpenAPI RecipeEvaluation
+func convertToOpenAPIEvaluation(modelEval model.RecipeEvaluation) openapi.RecipeEvaluation {
+	openAPIEval := openapi.RecipeEvaluation{
+		Scores:    convertToOpenAPIScores(modelEval.Scores),
+		TotalCost: modelEval.TotalCost,
+	}
+
+	if modelEval.AdjustedScores != nil {
+		adjustedScores := convertToOpenAPIScores(*modelEval.AdjustedScores)
+		openAPIEval.AdjustedScores = &adjustedScores
+	}
+
+	return openAPIEval
+}
+
+// convertToOpenAPIScores converts model EvaluationScores to OpenAPI EvaluationScores
+func convertToOpenAPIScores(modelScores model.EvaluationScores) openapi.EvaluationScores {
+	return openapi.EvaluationScores{
+		Umami:       modelScores.Umami,
+		Aroma:       modelScores.Aroma,
+		Saltiness:   modelScores.Saltiness,
+		Fat:         modelScores.Fat,
+		Sweetness:   modelScores.Sweetness,
+		Spiciness:   modelScores.Spiciness,
+		Originality: modelScores.Originality,
+		Visual:      modelScores.Visual,
+		Volume:      modelScores.Volume,
+		Harmony:     modelScores.Harmony,
+	}
 }
