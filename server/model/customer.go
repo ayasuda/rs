@@ -33,6 +33,18 @@ type PreferenceWeights struct {
 	Harmony     float32 `json:"harmony"`
 }
 
+// CustomerSatisfaction represents the satisfaction evaluation result
+type CustomerSatisfaction struct {
+	SatisfactionScore float32 `json:"satisfactionScore"`
+	WillReturn        bool    `json:"willReturn"`
+	PriceAcceptable   bool    `json:"priceAcceptable"`
+	EffectiveBudget   int     `json:"effectiveBudget"`
+	DetailedScores    struct {
+		TasteMatch float32 `json:"tasteMatch"`
+		PriceValue float32 `json:"priceValue"`
+	} `json:"detailedScores"`
+}
+
 // LoadCustomers loads customer categories from CSV file with mock preference data
 func LoadCustomers(filePath string) ([]CustomerCategory, error) {
 	file, err := os.Open(filePath)

@@ -189,40 +189,44 @@ func (s *Server) EvaluateCustomerSatisfaction(c *gin.Context) {
 		return
 	}
 
-	// Mock satisfaction calculation
-	// For simplicity, just return a decent satisfaction score
-	baseBudget := 1000
-	reputationBonus := float32(0.0)
+	// Find the customer category
+	var customer *model.CustomerCategory
+	for _, customerData := range masterCustomers {
+		if customerData.ID == request.CustomerCategoryId {
+			customer = &customerData
+			break
+		}
+	}
+
+	if customer == nil {
+		c.JSON(http.StatusBadRequest, openapi.Error{
+			Code:    "INVALID_CUSTOMER_ID",
+			Message: "Customer category not found",
+		})
+		return
+	}
+
+	// Convert OpenAPI RecipeEvaluation to model RecipeEvaluation
+	modelRecipeEval := convertToModelRecipeEvaluation(request.RecipeEvaluation)
+
+	// Get reputation bonus
+	reputationBonus := 0.0
 	if request.ReputationBonus != nil {
-		reputationBonus = *request.ReputationBonus
-	}
-	
-	effectiveBudget := int(float32(baseBudget) * (1.0 + reputationBonus))
-	priceAcceptable := request.Price <= effectiveBudget
-	
-	satisfactionScore := float32(85.0)
-	if !priceAcceptable {
-		satisfactionScore = 45.0
+		reputationBonus = float64(*request.ReputationBonus)
 	}
 
-	tasteMatch := float32(90.0)
-	priceValue := float32(80.0)
+	// Use the evaluation package to calculate satisfaction
+	modelSatisfaction := evaluation.EvaluateCustomerSatisfaction(
+		modelRecipeEval,
+		*customer,
+		request.Price,
+		reputationBonus,
+	)
 
-	satisfaction := openapi.CustomerSatisfaction{
-		SatisfactionScore: satisfactionScore,
-		WillReturn:        satisfactionScore > 70.0,
-		PriceAcceptable:   priceAcceptable,
-		EffectiveBudget:   &effectiveBudget,
-		DetailedScores: &struct {
-			PriceValue *float32 `json:"priceValue,omitempty"`
-			TasteMatch *float32 `json:"tasteMatch,omitempty"`
-		}{
-			TasteMatch: &tasteMatch,
-			PriceValue: &priceValue,
-		},
-	}
+	// Convert back to OpenAPI format
+	openAPISatisfaction := convertToOpenAPICustomerSatisfaction(modelSatisfaction)
 
-	c.JSON(http.StatusOK, satisfaction)
+	c.JSON(http.StatusOK, openAPISatisfaction)
 }
 
 // CalculatePricing handles POST /pricing/calculate
@@ -334,5 +338,53 @@ func convertToOpenAPIScores(modelScores model.EvaluationScores) openapi.Evaluati
 		Visual:      modelScores.Visual,
 		Volume:      modelScores.Volume,
 		Harmony:     modelScores.Harmony,
+	}
+}
+
+// convertToModelRecipeEvaluation converts OpenAPI RecipeEvaluation to model RecipeEvaluation
+func convertToModelRecipeEvaluation(openAPIEval openapi.RecipeEvaluation) model.RecipeEvaluation {
+	modelEval := model.RecipeEvaluation{
+		Scores:    convertToModelScores(openAPIEval.Scores),
+		TotalCost: openAPIEval.TotalCost,
+	}
+
+	if openAPIEval.AdjustedScores != nil {
+		adjustedScores := convertToModelScores(*openAPIEval.AdjustedScores)
+		modelEval.AdjustedScores = &adjustedScores
+	}
+
+	return modelEval
+}
+
+// convertToModelScores converts OpenAPI EvaluationScores to model EvaluationScores
+func convertToModelScores(openAPIScores openapi.EvaluationScores) model.EvaluationScores {
+	return model.EvaluationScores{
+		Umami:       openAPIScores.Umami,
+		Aroma:       openAPIScores.Aroma,
+		Saltiness:   openAPIScores.Saltiness,
+		Fat:         openAPIScores.Fat,
+		Sweetness:   openAPIScores.Sweetness,
+		Spiciness:   openAPIScores.Spiciness,
+		Originality: openAPIScores.Originality,
+		Visual:      openAPIScores.Visual,
+		Volume:      openAPIScores.Volume,
+		Harmony:     openAPIScores.Harmony,
+	}
+}
+
+// convertToOpenAPICustomerSatisfaction converts model CustomerSatisfaction to OpenAPI CustomerSatisfaction
+func convertToOpenAPICustomerSatisfaction(modelSatisfaction model.CustomerSatisfaction) openapi.CustomerSatisfaction {
+	return openapi.CustomerSatisfaction{
+		SatisfactionScore: modelSatisfaction.SatisfactionScore,
+		WillReturn:        modelSatisfaction.WillReturn,
+		PriceAcceptable:   modelSatisfaction.PriceAcceptable,
+		EffectiveBudget:   &modelSatisfaction.EffectiveBudget,
+		DetailedScores: &struct {
+			PriceValue *float32 `json:"priceValue,omitempty"`
+			TasteMatch *float32 `json:"tasteMatch,omitempty"`
+		}{
+			TasteMatch: &modelSatisfaction.DetailedScores.TasteMatch,
+			PriceValue: &modelSatisfaction.DetailedScores.PriceValue,
+		},
 	}
 }
