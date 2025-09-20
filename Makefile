@@ -5,8 +5,7 @@ GO_GEN_DIR=server/gen
 OPENAPI_FILE=server/openapi_spec.yaml
 
 generate:
-	oapi-codegen -package openapi -generate types,server,spec \
-		-o $(GO_GEN_DIR)/openapi.gen.go $(OPENAPI_FILE)
+	cd server && go generate ./gen
 
 run-server:
 	cd server && go run .
