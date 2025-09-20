@@ -6,8 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Ramen Simulator game project with a multi-language architecture:
 - **Game Logic Prototype**: Python scripts for ramen recipe evaluation system (`scripts/ramen.py`)
-- **Backend Server**: Go-based API server (planned, currently empty `server/` directory)
-- **Frontend**: Unity-based game client (planned)
+- **Backend Server**: Go-based API server partially implemented with Gin and oapi-codegen, providing mock APIs
+- **Frontend**: Phaser.js-based web prototype with dynamic ingredient loading and recipe evaluation
+- **Master Data**: CSV-based ingredient and customer data loaded from `server/data/`
 - **Documentation**: Comprehensive game design specifications in `spec/` directory
 
 ## Common Commands
@@ -20,7 +21,7 @@ make docs              # Start docsify documentation server
 ### Backend Development (Go)
 ```bash
 make generate          # Generate OpenAPI Go code from spec
-make run-server        # Run Go server (when implemented)
+make run-server        # Run Go server with CSV data loading
 make clean            # Remove generated files
 ```
 
@@ -29,9 +30,11 @@ make clean            # Remove generated files
 python scripts/ramen.py  # Run ramen evaluation prototype
 ```
 
-### Unity Development
+### Frontend Development
 ```bash
-make unity-build       # Unity CLI build (placeholder - not yet implemented)
+# Open phaser-app/index.html in browser
+# Or serve with local HTTP server:
+cd phaser-app && python -m http.server 3000
 ```
 
 ### Help
@@ -52,7 +55,11 @@ The `spec/` directory contains comprehensive game design documentation:
 
 ### Code Structure
 - `scripts/` - Python prototypes demonstrating game mechanics
-- `server/` - Go backend API server (OpenAPI-based, not yet implemented)
+- `server/` - Go backend API server with Gin and oapi-codegen implementation
+  - `server/data/` - CSV master data files (ingredients.csv, customers.csv)
+  - `server/gen/` - Generated Go code from OpenAPI spec
+  - `server/handlers/` - API endpoint implementations with mock responses
+- `phaser-app/` - Phaser.js frontend prototype with dropdown interface
 - `bin/` - Build outputs and executables
 - `docs/` - Documentation served by docsify
 
@@ -69,3 +76,25 @@ The project implements a complex ramen simulation with:
 - Python prototypes in `scripts/` demonstrate the core game mechanics before full implementation
 - Documentation is served via docsify and can be viewed locally with `make docs`
 - The project is bilingual (Japanese/English) with Japanese specifications and English code
+- Master data is loaded from CSV files on server startup for ingredients and customer categories
+- Frontend fetches dynamic data from backend APIs and provides dropdown-based recipe building
+
+## Current Implementation Status
+
+### Backend APIs (Go + Gin)
+- ✅ Recipe evaluation endpoint with 10-axis scoring
+- ✅ Customer category management with mock satisfaction calculation
+- ✅ Pricing calculation with cost breakdown
+- ✅ Master data endpoints for ingredients and customers
+- ✅ CSV data loading on startup (28 ingredients, 10 customer categories)
+
+### Frontend (Phaser.js)
+- ✅ Dynamic ingredient loading from backend API
+- ✅ Dropdown-based recipe selection interface
+- ✅ Multiple toppings selection (up to 3)
+- ✅ Recipe evaluation with enhanced results display
+- ✅ Table format showing scores, percentages, and quality ratings
+
+## Commit Message Guidelines
+
+When committing changes, use only the standard work summary that Claude Code provides at the end of each task. Do not include extra details, explanations, or formatting beyond the concise summary of what was accomplished.

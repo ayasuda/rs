@@ -1,22 +1,28 @@
 # Ramen Simulator - Frontend Prototype
 
-A minimal Phaser.js frontend for the Ramen Simulator game.
+A Phaser.js frontend for the Ramen Simulator game with dynamic ingredient loading and improved UI.
 
 ## Features
 
-- **Recipe Builder**: Select ingredients for your ramen recipe:
-  - 麺 (Noodles): 4 types (太麺, 細麺, 中太麺, 平打ち麺)
-  - スープ (Soup): 4 types (鶏白湯, 豚骨, 味噌, 魚介系)
-  - かえし (Sauce): 4 types (醤油だれ, 味噌だれ, 塩だれ, 豚骨だれ)
-  - 香味油 (Oil): 4 types (黒マー油, ネギ油, ラー油, ごま油)
-  - 具材 (Toppings): Up to 3 from 6 options (チャーシュー, 味玉, メンマ, 海苔, コーン, バター)
-  - 盛り付け (Presentation): 4 bowl types (黒どんぶり, 白どんぶり, 木製どんぶり, 陶器どんぶり)
+- **Dynamic Ingredient Loading**: Fetches ingredients from backend API (`GET /master/ingredients`)
+- **Dropdown Interface**: Clean dropdown selection for each recipe component:
+  - 麺 (Noodles): Dynamically loaded from server
+  - スープ (Soup): Dynamically loaded from server  
+  - かえし (Sauce): Dynamically loaded from server
+  - 香味油 (Oil): Dynamically loaded from server
+  - 具材 (Toppings): Multiple selection (up to 3) from server data
+  - 盛り付け (Presentation): Dynamically loaded from server
 
 - **Cooking Skill**: Adjustable skill level (1-10) affecting recipe evaluation
 
-- **API Integration**: Sends recipe to backend for evaluation via POST request
+- **API Integration**: Full integration with backend APIs
+  - Fetches ingredient master data on startup
+  - Sends complete recipe for evaluation via POST request
 
-- **Results Display**: Shows 10-axis evaluation scores and total cost
+- **Enhanced Results Display**: Table format showing:
+  - 10-axis evaluation scores with raw values and percentages
+  - Quality ratings (Excellent, Very Good, Good, Average, Poor, Very Poor)
+  - Color-coded ratings and total cost display
 
 ## Usage
 

@@ -1,43 +1,11 @@
-// Recipe ingredients data
-const INGREDIENTS = {
-    noodles: [
-        { id: 'thick_noodles', name: '太麺' },
-        { id: 'thin_noodles', name: '細麺' },
-        { id: 'medium_noodles', name: '中太麺' },
-        { id: 'flat_noodles', name: '平打ち麺' }
-    ],
-    soup: [
-        { id: 'chicken_broth', name: '鶏白湯' },
-        { id: 'pork_broth', name: '豚骨' },
-        { id: 'miso_broth', name: '味噌' },
-        { id: 'seafood_broth', name: '魚介系' }
-    ],
-    sauce: [
-        { id: 'shoyu_tare', name: '醤油だれ' },
-        { id: 'miso_tare', name: '味噌だれ' },
-        { id: 'shio_tare', name: '塩だれ' },
-        { id: 'tonkotsu_tare', name: '豚骨だれ' }
-    ],
-    oil: [
-        { id: 'black_garlic_oil', name: '黒マー油' },
-        { id: 'scallion_oil', name: 'ネギ油' },
-        { id: 'chili_oil', name: 'ラー油' },
-        { id: 'sesame_oil', name: 'ごま油' }
-    ],
-    toppings: [
-        { id: 'char_siu', name: 'チャーシュー' },
-        { id: 'ajitama', name: '味玉' },
-        { id: 'menma', name: 'メンマ' },
-        { id: 'nori', name: '海苔' },
-        { id: 'corn', name: 'コーン' },
-        { id: 'butter', name: 'バター' }
-    ],
-    presentation: [
-        { id: 'black_bowl', name: '黒どんぶり' },
-        { id: 'white_bowl', name: '白どんぶり' },
-        { id: 'wooden_bowl', name: '木製どんぶり' },
-        { id: 'ceramic_bowl', name: '陶器どんぶり' }
-    ]
+// Recipe ingredients data - will be loaded from API
+let INGREDIENTS = {
+    noodles: [],
+    soup: [],
+    sauce: [],
+    oil: [],
+    topping: [],
+    presentation: []
 };
 
 // Game configuration
@@ -68,12 +36,42 @@ let currentRecipe = {
 let scene;
 let recipeDisplays = {};
 let evaluationResults = null;
+let dropdowns = {};
+let loadingText = null;
 
 function preload() {
     // No assets to preload for this minimal prototype
 }
 
-function create() {
+// Load ingredients from backend API
+async function loadIngredientsFromAPI() {
+    const response = await fetch('http://localhost:8080/master/ingredients');
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const ingredients = await response.json();
+    
+    // Group ingredients by category
+    INGREDIENTS = {
+        noodles: [],
+        soup: [],
+        sauce: [],
+        oil: [],
+        topping: [],
+        presentation: []
+    };
+    
+    ingredients.forEach(ingredient => {
+        if (INGREDIENTS[ingredient.category]) {
+            INGREDIENTS[ingredient.category].push(ingredient);
+        }
+    });
+    
+    console.log('Loaded ingredients:', INGREDIENTS);
+}
+
+async function create() {
     scene = this;
     
     // Title
@@ -83,51 +81,63 @@ function create() {
         fontWeight: 'bold'
     }).setOrigin(0.5);
 
-    // Instructions
-    this.add.text(600, 90, 'Select ingredients for your ramen recipe:', {
+    // Loading message
+    loadingText = this.add.text(600, 400, 'Loading ingredients from server...', {
         fontSize: '18px',
-        fill: '#bdc3c7'
+        fill: '#f39c12'
     }).setOrigin(0.5);
 
-    // Create ingredient selection sections
-    createIngredientSection('noodles', '麺', 100, 150);
-    createIngredientSection('soup', 'スープ', 100, 220);
-    createIngredientSection('sauce', 'かえし', 100, 290);
-    createIngredientSection('oil', '香味油', 100, 360);
-    createIngredientSection('toppings', '具材', 100, 430);
-    createIngredientSection('presentation', '盛り付け', 100, 500);
+    try {
+        // Fetch ingredients from backend
+        await loadIngredientsFromAPI();
+        
+        // Clear loading message
+        loadingText.destroy();
+        
+        // Instructions
+        this.add.text(600, 90, 'Select ingredients for your ramen recipe:', {
+            fontSize: '18px',
+            fill: '#bdc3c7'
+        }).setOrigin(0.5);
 
-    // Cooking skill level
-    createSkillLevelSection(100, 570);
+        // Create ingredient selection sections with dropdowns
+        createDropdownSection('noodles', '麺', 50, 150);
+        createDropdownSection('soup', 'スープ', 50, 200);
+        createDropdownSection('sauce', 'かえし', 50, 250);
+        createDropdownSection('oil', '香味油', 50, 300);
+        createDropdownSection('topping', '具材', 50, 350);
+        createDropdownSection('presentation', '盛り付け', 50, 400);
 
-    // Evaluate button
-    const evaluateButton = scene.add.text(600, 650, 'Evaluate Recipe', {
-        fontSize: '24px',
-        fill: '#2ecc71',
-        backgroundColor: '#27ae60',
-        padding: { x: 20, y: 10 }
-    }).setOrigin(0.5).setInteractive();
+        // Cooking skill level
+        createSkillLevelSection(50, 470);
 
-    evaluateButton.on('pointerdown', evaluateRecipe);
-    evaluateButton.on('pointerover', () => evaluateButton.setTint(0xcccccc));
-    evaluateButton.on('pointerout', () => evaluateButton.clearTint());
+        // Confirm button
+        const confirmButton = scene.add.text(300, 550, 'Confirm Recipe', {
+            fontSize: '20px',
+            fill: '#2ecc71',
+            backgroundColor: '#27ae60',
+            padding: { x: 15, y: 8 }
+        }).setOrigin(0.5).setInteractive();
 
-    // Results area
-    scene.add.text(650, 150, 'Evaluation Results:', {
-        fontSize: '20px',
-        fill: '#ecf0f1',
-        fontWeight: 'bold'
-    });
+        confirmButton.on('pointerdown', evaluateRecipe);
+        confirmButton.on('pointerover', () => confirmButton.setTint(0xcccccc));
+        confirmButton.on('pointerout', () => confirmButton.clearTint());
 
-    // Initialize with default selections
-    selectIngredient('noodles', INGREDIENTS.noodles[0]);
-    selectIngredient('soup', INGREDIENTS.soup[0]);
-    selectIngredient('sauce', INGREDIENTS.sauce[0]);
-    selectIngredient('oil', INGREDIENTS.oil[0]);
-    selectIngredient('presentation', INGREDIENTS.presentation[0]);
+        // Results area
+        scene.add.text(650, 150, 'Evaluation Results:', {
+            fontSize: '18px',
+            fill: '#ecf0f1',
+            fontWeight: 'bold'
+        });
+
+    } catch (error) {
+        console.error('Failed to load ingredients:', error);
+        loadingText.setText('Error: Could not load ingredients from server.\nMake sure the Go server is running on localhost:8080');
+        loadingText.setFill('#e74c3c');
+    }
 }
 
-function createIngredientSection(category, label, x, y) {
+function createDropdownSection(category, label, x, y) {
     // Section label
     scene.add.text(x, y, label + ':', {
         fontSize: '16px',
@@ -136,32 +146,29 @@ function createIngredientSection(category, label, x, y) {
     });
 
     // Current selection display
-    recipeDisplays[category] = scene.add.text(x + 200, y, 'None selected', {
+    recipeDisplays[category] = scene.add.text(x + 120, y, 'None selected', {
         fontSize: '14px',
         fill: '#f39c12'
     });
 
-    // Selection buttons
-    const ingredients = INGREDIENTS[category];
-    const buttonsPerRow = category === 'toppings' ? 3 : 4;
-    
-    ingredients.forEach((ingredient, index) => {
-        const row = Math.floor(index / buttonsPerRow);
-        const col = index % buttonsPerRow;
-        const buttonX = x + 350 + (col * 120);
-        const buttonY = y + (row * 25);
+    // Dropdown button
+    const dropdownButton = scene.add.text(x + 350, y, '▼ Select', {
+        fontSize: '14px',
+        fill: '#3498db',
+        backgroundColor: '#2980b9',
+        padding: { x: 10, y: 5 }
+    }).setInteractive();
 
-        const button = scene.add.text(buttonX, buttonY, ingredient.name, {
-            fontSize: '12px',
-            fill: '#3498db',
-            backgroundColor: '#2980b9',
-            padding: { x: 8, y: 4 }
-        }).setInteractive();
+    dropdowns[category] = {
+        button: dropdownButton,
+        isOpen: false,
+        options: [],
+        selectedOption: null
+    };
 
-        button.on('pointerdown', () => selectIngredient(category, ingredient));
-        button.on('pointerover', () => button.setTint(0xcccccc));
-        button.on('pointerout', () => button.clearTint());
-    });
+    dropdownButton.on('pointerdown', () => toggleDropdown(category));
+    dropdownButton.on('pointerover', () => dropdownButton.setTint(0xcccccc));
+    dropdownButton.on('pointerout', () => dropdownButton.clearTint());
 }
 
 function createSkillLevelSection(x, y) {
@@ -171,7 +178,7 @@ function createSkillLevelSection(x, y) {
         fontWeight: 'bold'
     });
 
-    recipeDisplays.skillLevel = scene.add.text(x + 200, y, '5.0', {
+    recipeDisplays.skillLevel = scene.add.text(x + 180, y, '5.0', {
         fontSize: '14px',
         fill: '#f39c12'
     });
@@ -194,13 +201,74 @@ function createSkillLevelSection(x, y) {
     }
 }
 
+function toggleDropdown(category) {
+    const dropdown = dropdowns[category];
+    
+    // Close all other dropdowns first
+    Object.keys(dropdowns).forEach(cat => {
+        if (cat !== category && dropdowns[cat].isOpen) {
+            closeDropdown(cat);
+        }
+    });
+    
+    if (dropdown.isOpen) {
+        closeDropdown(category);
+    } else {
+        openDropdown(category);
+    }
+}
+
+function openDropdown(category) {
+    const dropdown = dropdowns[category];
+    const ingredients = INGREDIENTS[category];
+    
+    if (!ingredients || ingredients.length === 0) return;
+    
+    dropdown.isOpen = true;
+    dropdown.button.setText('▲ Select');
+    
+    // Create dropdown options
+    ingredients.forEach((ingredient, index) => {
+        const optionY = dropdown.button.y + 30 + (index * 25);
+        const optionText = scene.add.text(dropdown.button.x, optionY, ingredient.name, {
+            fontSize: '12px',
+            fill: '#ecf0f1',
+            backgroundColor: '#34495e',
+            padding: { x: 8, y: 3 }
+        }).setInteractive();
+        
+        optionText.on('pointerdown', () => selectIngredient(category, ingredient));
+        optionText.on('pointerover', () => optionText.setTint(0xcccccc));
+        optionText.on('pointerout', () => optionText.clearTint());
+        
+        dropdown.options.push(optionText);
+    });
+}
+
+function closeDropdown(category) {
+    const dropdown = dropdowns[category];
+    
+    dropdown.isOpen = false;
+    dropdown.button.setText('▼ Select');
+    
+    // Remove all option texts
+    dropdown.options.forEach(option => option.destroy());
+    dropdown.options = [];
+}
+
 function selectIngredient(category, ingredient) {
-    if (category === 'toppings') {
-        // Toggle toppings
+    // Close the dropdown after selection
+    closeDropdown(category);
+    
+    if (category === 'topping') {
+        // Handle multiple toppings selection
         const index = currentRecipe.toppings.findIndex(t => t.id === ingredient.id);
         if (index === -1) {
             if (currentRecipe.toppings.length < 3) { // Limit to 3 toppings
                 currentRecipe.toppings.push(ingredient);
+            } else {
+                alert('Maximum 3 toppings allowed');
+                return;
             }
         } else {
             currentRecipe.toppings.splice(index, 1);
@@ -209,8 +277,9 @@ function selectIngredient(category, ingredient) {
         const toppingsText = currentRecipe.toppings.length > 0 
             ? currentRecipe.toppings.map(t => t.name).join(', ')
             : 'None selected';
-        recipeDisplays.toppings.setText(toppingsText);
+        recipeDisplays.topping.setText(toppingsText);
     } else {
+        // Single selection for other categories
         currentRecipe[category] = ingredient;
         recipeDisplays[category].setText(ingredient.name);
     }
@@ -224,7 +293,14 @@ async function evaluateRecipe() {
         return;
     }
 
-    // Prepare request body
+    // Close any open dropdowns
+    Object.keys(dropdowns).forEach(category => {
+        if (dropdowns[category].isOpen) {
+            closeDropdown(category);
+        }
+    });
+
+    // Prepare request body with proper category names
     const requestBody = {
         noodles: {
             id: currentRecipe.noodles.id,
@@ -317,20 +393,100 @@ function displayEvaluationResults(result) {
         harmony: '調和性'
     };
 
-    let resultText = 'Evaluation Results:\n\n';
-    resultText += `Total Cost: ¥${result.totalCost}\n\n`;
-    
+    // Create a table-like display
+    const tableX = 650;
+    const tableY = 180;
+    let currentY = tableY;
+
+    // Header
+    evaluationResults = scene.add.text(tableX, currentY, 'Recipe Evaluation Results', {
+        fontSize: '16px',
+        fill: '#ecf0f1',
+        fontWeight: 'bold'
+    });
+    currentY += 25;
+
+    // Cost information
+    scene.add.text(tableX, currentY, `Total Cost: ¥${result.totalCost}`, {
+        fontSize: '14px',
+        fill: '#f39c12'
+    });
+    currentY += 30;
+
+    // Table headers
+    scene.add.text(tableX, currentY, 'Evaluation Axis', {
+        fontSize: '14px',
+        fill: '#bdc3c7',
+        fontWeight: 'bold'
+    });
+    scene.add.text(tableX + 120, currentY, 'Score', {
+        fontSize: '14px',
+        fill: '#bdc3c7',
+        fontWeight: 'bold'
+    });
+    scene.add.text(tableX + 180, currentY, 'Percentage', {
+        fontSize: '14px',
+        fill: '#bdc3c7',
+        fontWeight: 'bold'
+    });
+    scene.add.text(tableX + 260, currentY, 'Rating', {
+        fontSize: '14px',
+        fill: '#bdc3c7',
+        fontWeight: 'bold'
+    });
+    currentY += 25;
+
+    // Separator line
+    scene.add.text(tableX, currentY, '─'.repeat(40), {
+        fontSize: '14px',
+        fill: '#7f8c8d'
+    });
+    currentY += 20;
+
+    // Data rows
     Object.entries(axisNames).forEach(([key, label]) => {
         const score = scores[key];
         const percentage = Math.round((score / 65535) * 100);
-        resultText += `${label}: ${score} (${percentage}%)\n`;
-    });
+        const rating = getRating(percentage);
+        const ratingColor = getRatingColor(percentage);
 
-    evaluationResults = scene.add.text(650, 180, resultText, {
-        fontSize: '14px',
-        fill: '#2ecc71',
-        lineSpacing: 5
+        scene.add.text(tableX, currentY, label, {
+            fontSize: '12px',
+            fill: '#ecf0f1'
+        });
+        
+        scene.add.text(tableX + 120, currentY, score.toString(), {
+            fontSize: '12px',
+            fill: '#3498db'
+        });
+        
+        scene.add.text(tableX + 180, currentY, `${percentage}%`, {
+            fontSize: '12px',
+            fill: '#2ecc71'
+        });
+        
+        scene.add.text(tableX + 260, currentY, rating, {
+            fontSize: '12px',
+            fill: ratingColor
+        });
+        
+        currentY += 18;
     });
+}
+
+function getRating(percentage) {
+    if (percentage >= 90) return 'Excellent';
+    if (percentage >= 75) return 'Very Good';
+    if (percentage >= 60) return 'Good';
+    if (percentage >= 40) return 'Average';
+    if (percentage >= 25) return 'Poor';
+    return 'Very Poor';
+}
+
+function getRatingColor(percentage) {
+    if (percentage >= 75) return '#2ecc71'; // Green
+    if (percentage >= 50) return '#f39c12'; // Orange
+    return '#e74c3c'; // Red
 }
 
 // Initialize the game
