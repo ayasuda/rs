@@ -1,49 +1,71 @@
-Ramen Simulator
-===
+# Ramen Simulator
 
-* [企画書](spec/proposal.md)
-  * タイトル・ジャンル
-  * 企画目的
-  * 対象ユーザー
-  * プラットフォーム・収益モデル
-  * 差別化ポイント
-* [ゲームの構成要素](spec/game_structure.md)
-  * 全体フロー（例：レシピ作成→営業→評価→改善）
-  * 主なシステム一覧
-  * 反復的成長のループ構造
-* [レシピクラフト](spec/recipe.md)
-  * レシピの構成要素（麺／スープ／かえし／香味油／具材／盛り付け）
-  * 評価軸（10軸）と意味
-  * 評価値の算出手順
-  * 寄与値の合算
-  * 調理技術補正
-  * 調和性・創作性の補正
-  * 顧客評価ロジック
-  * 嗜好ベクトル・重みベクトル
-  * 満足度スコアの計算式
-* [顧客システム](spec/customer.md)
-  * 顧客カテゴリ一覧（10種）
-  * 来店時間帯の生活リズム
-  * 嗜好傾向と満腹度・価格感度
-  * 常連化フラグの仕組み（※今後追加予定）
-* [店舗経営](spec/location.md)
-  * 立地と来客数の計算式
-  * 潜在顧客数／実効流入率
-  * 評判補正・天候・宣伝・曜日補正など
-  * 営業時間と固定費の関係
-  * 評判スコアと因果関係（評価→評判→来客数）
-* [メニュー・価格戦略](spec/menu.md)
-  * レシピ原価の自動算出
-  * ラーメン価格の自由設定
-  * 支払い上限と評判の関係
-  * 満腹度によるサイドメニュー制限
-* 接客ミニゲーム（※仕様未確定）
-  * ミニゲームの役割（通貨取得／時間つぶし）
-  * 操作：タップ・スワイプ・テンポ評価？
-  * 自動化との違い（精度ボーナス）
-* [UIと画面遷移（※別資料と連携）](spec/scene.md)
-  * 画面一覧表（一覧画面／開店画面／レシピ作成など）
-  * 画面マップ（PlantUML対応）
-* [将来的な拡張・バージョン管理](spec/roadmap.md)
-  * スプリントごとの開発計画（概要）
-  * 将来実装予定の機能一覧（例：ランキング／SNS連携など）
+A ramen shop simulation game with deep recipe crafting and management mechanics.
+
+## Overview
+
+Ramen Simulator is a management simulation game where players design their ideal ramen recipe, manage a shop, and serve customers with varying tastes and preferences. The game features a 10-axis recipe evaluation system, dynamic customer modeling, and strategic shop management.
+
+## Documentation
+
+Design and specification documents are organized as follows:
+
+- [`docs/ja/`](docs/ja/index.md) — Primary specification documents (Japanese, source of truth)
+- [`docs/en/`](docs/en/index.md) — English translations (for reference and AI use)
+
+### Key Documents
+
+| Document | Japanese | English |
+|---|---|---|
+| Game Proposal | [企画書](docs/ja/proposal.md) | [Proposal](docs/en/proposal.md) |
+| Game Structure | [ゲームの構成要素](docs/ja/game_structure.md) | [Game Structure](docs/en/game_structure.md) |
+| Recipe Crafting | [レシピクラフト](docs/ja/recipe.md) | [Recipe Crafting](docs/en/recipe.md) |
+| Customer System | [顧客システム](docs/ja/customer.md) | [Customer System](docs/en/customer.md) |
+| Shop Location | [店舗経営](docs/ja/location.md) | [Shop Management](docs/en/location.md) |
+| Menu & Pricing | [メニュー・価格戦略](docs/ja/menu.md) | [Menu & Pricing](docs/en/menu.md) |
+| UI & Scenes | [UIと画面遷移](docs/ja/scene.md) | [UI & Scenes](docs/en/scene.md) |
+| Roadmap | [将来的な拡張](docs/ja/roadmap.md) | [Roadmap](docs/en/roadmap.md) |
+
+## Project Structure
+
+```
+README.md           # This file — human entry point
+AGENTS.md           # AI agent entry point
+docs/
+  ja/               # Primary design documents (Japanese, source of truth)
+  en/               # English translations (for AI use)
+server/             # Go backend API server (Gin + oapi-codegen)
+  data/             # CSV master data (ingredients, customers)
+  gen/              # Generated Go code from OpenAPI spec
+  handlers/         # API endpoint implementations
+phaser-app/         # Phaser.js frontend prototype
+scripts/            # Python prototypes for game mechanics
+spec/               # Legacy spec directory (see docs/ja/ for current docs)
+```
+
+## Development
+
+### Backend (Go)
+
+```bash
+make generate      # Generate OpenAPI Go code from spec
+make run-server    # Run Go server with CSV data loading
+make clean         # Remove generated files
+```
+
+### Frontend (Phaser.js)
+
+```bash
+cd phaser-app && python -m http.server 3000
+# Open http://localhost:3000 in your browser
+```
+
+### Documentation
+
+```bash
+make docs          # Start docsify documentation server
+```
+
+## Issues & Work Tracking
+
+All work items are tracked as [GitHub Issues](https://github.com/ayasuda/rs/issues).

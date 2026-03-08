@@ -1,0 +1,94 @@
+name: Sync docs/en from docs/ja
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/ja/**'
+
+jobs:
+  sync-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Translate updated docs/ja files to docs/en
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          pip install anthropic
+
+          python3 - <<'EOF'
+          import os
+          import subprocess
+          import anthropic
+
+          client = anthropic.Anthropic()
+
+          ja_dir = "docs/ja"
+          en_dir = "docs/en"
+          os.makedirs(en_dir, exist_ok=True)
+
+          # Get list of changed ja files from git
+          result = subprocess.run(
+              ["git", "diff", "--name-only", "HEAD~1", "HEAD", "--", f"{ja_dir}/"],
+              capture_output=True, text=True
+          )
+          changed_files = [f for f in result.stdout.strip().split("\n") if f.endswith(".md")]
+
+          # If no changed files detected (e.g., first run), translate all
+          if not changed_files:
+              changed_files = [
+                  os.path.join(ja_dir, f)
+                  for f in os.listdir(ja_dir)
+                  if f.endswith(".md")
+              ]
+
+          for ja_path in changed_files:
+              if not os.path.exists(ja_path):
+                  continue
+              filename = os.path.basename(ja_path)
+              en_path = os.path.join(en_dir, filename)
+
+              with open(ja_path, "r", encoding="utf-8") as f:
+                  ja_content = f.read()
+
+              print(f"Translating {ja_path} -> {en_path}")
+
+              message = client.messages.create(
+                  model="claude-opus-4-6",
+                  max_tokens=8096,
+                  messages=[
+                      {
+                          "role": "user",
+                          "content": (
+                              "Translate the following Japanese Markdown document to English. "
+                              "Preserve all Markdown formatting, headings, tables, code blocks, "
+                              "and links exactly. Only translate the text content.\n\n"
+                              f"{ja_content}"
+                          ),
+                      }
+                  ],
+              )
+
+              en_content = message.content[0].text
+              with open(en_path, "w", encoding="utf-8") as f:
+                  f.write(en_content)
+
+          print("Translation complete.")
+          EOF
+
+      - name: Commit translated files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/en/
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: sync docs/en from docs/ja [skip ci]"
+            git push
+          fi
