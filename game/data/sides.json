@@ -1,0 +1,7 @@
+[
+  {"id": "rice", "label": "ライス", "cost": 30, "price": 150, "volume": 0.2},
+  {"id": "gyoza", "label": "餃子", "cost": 100, "price": 350, "volume": 0.25},
+  {"id": "karaage", "label": "唐揚げ", "cost": 130, "price": 400, "volume": 0.3},
+  {"id": "chashu-don", "label": "ミニチャーシュー丼", "cost": 120, "price": 380, "volume": 0.35},
+  {"id": "annin", "label": "杏仁豆腐", "cost": 60, "price": 280, "volume": 0.1}
+]
