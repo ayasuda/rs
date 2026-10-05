@@ -55,31 +55,6 @@ layout: scene
 @enduml
 ```
 
-## API 呼び出し
-
-```
-@startuml
-actor Player
-participant UI as "B2 レシピノート"
-participant API as "レシピ一覧取得API"
-database DB as "サーバDB"
-
-Player -> UI : シーンに遷移
-activate UI
-
-UI -> API : GET /recipes
-activate API
-
-API -> DB : レシピ一覧をクエリ
-DB --> API : データ返却
-API --> UI : レシピ一覧データ（JSON）
-
-UI -> UI : レシピ一覧を描画
-deactivate API
-deactivate UI
-@enduml
-```
-
 ## 備考
 
 - レシピは最大50個まで保存可能（予定）

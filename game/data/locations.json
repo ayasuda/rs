@@ -1,0 +1,42 @@
+[
+  {"id": "gakusei", "name": "学生街の路地裏", "desc": "大学と高校に挟まれた小さな物件。家賃は安いが席数は少ない。",
+   "rent": 4000, "seats": 8, "deposit": 100000,
+   "customers": {
+     "university": {"potential": 900, "base_rate": 0.04},
+     "highschool": {"potential": 400, "base_rate": 0.04},
+     "freeter": {"potential": 400, "base_rate": 0.035},
+     "office": {"potential": 150, "base_rate": 0.03},
+     "family": {"potential": 100, "base_rate": 0.03},
+     "senior": {"potential": 100, "base_rate": 0.03}
+   }},
+  {"id": "ekimae", "name": "駅前オフィス街", "desc": "昼どきは会社員であふれる一等地。平日に強く、家賃は高い。",
+   "rent": 9000, "seats": 14, "deposit": 300000,
+   "customers": {
+     "office": {"potential": 1500, "base_rate": 0.04},
+     "career": {"potential": 600, "base_rate": 0.035},
+     "university": {"potential": 300, "base_rate": 0.03},
+     "freeter": {"potential": 300, "base_rate": 0.03},
+     "madam": {"potential": 150, "base_rate": 0.03},
+     "tourist": {"potential": 150, "base_rate": 0.03},
+     "driver": {"potential": 50, "base_rate": 0.03}
+   }},
+  {"id": "roadside", "name": "郊外ロードサイド", "desc": "駐車場つきの広い店舗。週末の家族連れと、深夜〜朝のドライバーが狙い目。",
+   "rent": 5500, "seats": 20, "deposit": 200000,
+   "customers": {
+     "family": {"potential": 900, "base_rate": 0.045},
+     "driver": {"potential": 500, "base_rate": 0.05},
+     "senior": {"potential": 400, "base_rate": 0.035},
+     "madam": {"potential": 300, "base_rate": 0.03},
+     "freeter": {"potential": 200, "base_rate": 0.03},
+     "highschool": {"potential": 100, "base_rate": 0.03}
+   }},
+  {"id": "kanko", "name": "観光地の門前通り", "desc": "観光客が行き交う通り沿い。個性と見た目が受ければ高単価を狙える。",
+   "rent": 7500, "seats": 10, "deposit": 250000,
+   "customers": {
+     "tourist": {"potential": 1000, "base_rate": 0.04},
+     "madam": {"potential": 400, "base_rate": 0.035},
+     "senior": {"potential": 400, "base_rate": 0.03},
+     "family": {"potential": 300, "base_rate": 0.03},
+     "university": {"potential": 150, "base_rate": 0.03}
+   }}
+]

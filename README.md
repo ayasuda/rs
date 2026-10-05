@@ -1,6 +1,8 @@
 Ramen Simulator
 ===
 
+ゲーム本体は [game/](game/README.md)（Godot 4.7 / GDScript）。動かし方と実装範囲はそちらを参照。
+
 * [企画書](spec/proposal.md)
   * タイトル・ジャンル
   * 企画目的
