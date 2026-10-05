@@ -2,7 +2,6 @@ Ramen Simulator
 ===
 
 ゲーム本体は [game/](game/README.md)（Godot 4.7 / GDScript）。動かし方と実装範囲はそちらを参照。
-`server/` は以前の Go 版サーバーの試作で、Godot 版からは使っていない。
 
 * [企画書](spec/proposal.md)
   * タイトル・ジャンル

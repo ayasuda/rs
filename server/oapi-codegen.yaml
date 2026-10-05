@@ -1,9 +1,0 @@
-package: main
-generate:
-  - types
-  - gin
-    #  - spec
-output: server.gen.go
-import-mapping:
-  time: time
-
