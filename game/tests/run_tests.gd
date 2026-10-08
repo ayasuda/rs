@@ -11,9 +11,10 @@ var _checks := 0
 func _initialize() -> void:
 	MasterData.ensure_loaded()
 	for test in [
-		"test_master_data", "test_matching_score", "test_evaluate_recipe_matches_spec",
-		"test_evaluate_ignores_unknown_and_clips", "test_skill_boost_matches_spec",
-		"test_cooking_noise_shrinks_with_skill", "test_comment", "test_recipe_cost",
+		"test_master_data", "test_matching_score", "test_satisfaction_matches_spec_example",
+		"test_evaluate_recipe_matches_spec", "test_evaluate_ignores_unknown_and_clips",
+		"test_quality_penalty", "test_cooking_noise_shrinks_with_skill", "test_comment",
+		"test_recipe_cost",
 		"test_economy", "test_simulation", "test_closed_slots_bring_nobody",
 		"test_overpriced_menu_loses_customers", "test_run_day_and_save_roundtrip",
 	]:
@@ -69,20 +70,59 @@ func test_master_data() -> void:
 	gs.free()
 
 
+## 特徴 8 軸 + 出来 2 軸のベクトルを作る。
+func vec(features: Array, creative: int = 0, harmony: int = 0) -> PackedInt32Array:
+	var v := PackedInt32Array(features)
+	v.append(creative)
+	v.append(harmony)
+	return v
+
+
+## 特徴 8 軸の重み。出来 2 軸の分は 0 で埋める（満足度の式では使わない）。
+func weights(features: Array) -> PackedFloat64Array:
+	var w := PackedFloat64Array(features)
+	w.append(0.0)
+	w.append(0.0)
+	return w
+
+
 func test_matching_score() -> void:
-	var recipe := PackedInt32Array([30000, 20000, 25000, 32000, 10000, 5000, 15000, 18000, 28000, 22000])
-	var pref := PackedInt32Array([32000, 20000, 24000, 33000, 9000, 6000, 16000, 17000, 29000, 21000])
-	var weight := PackedFloat64Array([1.0, 0.8, 1.2, 1.0, 0.5, 0.5, 0.7, 0.6, 1.0, 0.9])
-	var score := Evaluation.matching_score(recipe, pref, weight)
-	check(score > 80.0 and score < 100.0, "近い嗜好なら 80〜100: %f" % score)
-	check(is_equal_approx(Evaluation.matching_score(pref, pref, weight), 100.0), "完全一致は 100")
-	var far := PackedInt32Array([0, 60000, 0, 0, 60000, 60000, 60000, 0, 0, 0])
-	check(Evaluation.matching_score(far, pref, weight) < 20.0, "かけ離れていれば低い")
+	var pref := vec([32000, 20000, 24000, 33000, 9000, 6000, 17000, 29000])
+	var weight := weights([1.0, 0.8, 1.2, 1.0, 0.5, 0.5, 0.6, 1.0])
+	check(is_equal_approx(Evaluation.matching_score(vec([32000, 20000, 24000, 33000, 9000, 6000, 17000, 29000], 255, 255), pref, weight), 1000.0),
+		"特徴が完全一致で出来が最高なら 1000")
+	check(is_equal_approx(Evaluation.matching_score(vec([32000, 20000, 24000, 33000, 9000, 6000, 17000, 29000]), pref, weight), 800.0),
+		"特徴が完全一致で出来が 0 なら 800")
+	var near := Evaluation.matching_score(vec([30000, 20000, 25000, 32000, 10000, 5000, 18000, 28000]), pref, weight)
+	check(near > 750.0 and near < 800.0, "近い嗜好なら特徴分はほぼ満点: %f" % near)
+	var far := Evaluation.matching_score(vec([0, 60000, 0, 0, 60000, 60000, 0, 0]), pref, weight)
+	check(far < 10.0, "かけ離れていれば特徴分はほぼ 0: %f" % far)
+	var base := vec([32000, 20000, 24000, 33000, 9000, 6000, 17000, 29000], 100, 100)
+	var more := vec([32000, 20000, 24000, 33000, 9000, 6000, 17000, 29000], 200, 100)
+	check(Evaluation.matching_score(more, pref, weight) > Evaluation.matching_score(base, pref, weight),
+		"出来は高いほど良い")
+	var heavy := PackedFloat64Array(weight)
+	for i in Metric.FEATURE_COUNT:
+		heavy[i] *= 3.0
+	var off := vec([30000, 20000, 25000, 32000, 10000, 5000, 18000, 28000])
+	check(is_equal_approx(Evaluation.matching_score(off, pref, heavy), Evaluation.matching_score(off, pref, weight)),
+		"重みは相対配分：全体を大きくしても採点は辛くならない")
+	check(is_equal_approx(Evaluation.closeness(Balance.SATISFACTION_SIGMA), exp(-0.5)), "1σ ずれで exp(-1/2)")
+
+
+## spec/recipe.md「顧客満足度の算出」の例：大学生、σ=6000、創作性 90・調和性 94 で 829 点。
+func test_satisfaction_matches_spec_example() -> void:
+	var e := vec([35000, 17000, 17000, 32000, 8000, 3500, 12500, 12000], 90, 94)
+	var h := vec([36000, 17000, 17000, 33000, 8000, 6000, 12000, 16000])
+	var w := weights([1.0, 0.7, 0.6, 1.2, 0.4, 0.8, 0.4, 1.2])
+	var score := Evaluation.matching_score(e, h, w)
+	check(absf(score - 829.4) < 0.5, "仕様書の算出例は 829 点: %f" % score)
 
 
 func test_evaluate_recipe_matches_spec() -> void:
+	# 特徴 8 軸は仕様書の表の合計どおり。出来 2 軸は暫定の算出（素材の値の合算を 255 に縮める）
 	var eval := Evaluation.evaluate_recipe(spec_recipe())
-	var want := PackedInt32Array([35000, 17000, 17000, 32000, 8000, 3500, 9000, 12500, 12000, 27000])
+	var want := vec([35000, 17000, 17000, 32000, 8000, 3500, 12500, 12000], 57, 172)
 	for i in Metric.COUNT:
 		check(eval[i] == want[i], "%s: got %d, want %d" % [Metric.LABELS[i], eval[i], want[i]])
 
@@ -93,47 +133,57 @@ func test_evaluate_ignores_unknown_and_clips() -> void:
 	var many := []
 	for n in 10:
 		many.append("soup-tonkotsu")
-	check(Evaluation.evaluate_components(many)[Metric.Key.UMAMI] == Metric.MAX_VALUE, "65535 でクリップ")
+	var clipped := Evaluation.evaluate_components(many)
+	check(clipped[Metric.Key.UMAMI] == Metric.MAX_VALUE, "特徴は 65535 でクリップ")
+	check(clipped[Metric.Key.HARMONY] == Metric.QUALITY_MAX, "出来は 255 でクリップ")
 
 
-func test_skill_boost_matches_spec() -> void:
-	var boosted := Evaluation.apply_skill_boost(Evaluation.evaluate_recipe(spec_recipe()), 1.0)
-	var want := PackedInt32Array([36050, 17510, 17510, 32960, 8240, 3605, 9270, 12875, 12360, 29160])
-	for i in Metric.COUNT:
-		check(boosted[i] == want[i], "補正後 %s: got %d, want %d" % [Metric.LABELS[i], boosted[i], want[i]])
+func test_quality_penalty() -> void:
+	var base := Evaluation.evaluate_recipe(spec_recipe())
+	check(Evaluation.apply_quality_penalty(base, 1.0) == base, "skill=1.0 ならレシピどおり（良くはならない）")
+	var low := Evaluation.apply_quality_penalty(base, 0.0)
+	for i in Metric.FEATURE_COUNT:
+		check(low[i] == base[i], "特徴 %s は減点されない" % Metric.LABELS[i])
+	for i in Metric.QUALITY_KEYS:
+		var want := roundi(base[i] * (1.0 - Balance.SKILL_QUALITY_PENALTY))
+		check(low[i] == want, "出来 %s は減点される: got %d, want %d" % [Metric.LABELS[i], low[i], want])
+	var mid := Evaluation.apply_quality_penalty(base, 0.5)
+	check(mid[Metric.Key.HARMONY] > low[Metric.Key.HARMONY] and mid[Metric.Key.HARMONY] < base[Metric.Key.HARMONY],
+		"技術が中くらいなら減点も中くらい")
 
 
 func test_cooking_noise_shrinks_with_skill() -> void:
-	var base := PackedInt32Array()
-	base.resize(Metric.COUNT)
-	base.fill(30000)
+	var base := vec([30000, 30000, 30000, 30000, 30000, 30000, 30000, 30000], 200, 200)
 	var rng := seeded(1)
 	var low := 0.0
 	var high := 0.0
 	for n in 20:
 		var a := Evaluation.apply_cooking_noise(base, 0.6, rng)
 		var b := Evaluation.apply_cooking_noise(base, 0.98, rng)
-		for i in Metric.COUNT:
+		for i in Metric.FEATURE_COUNT:
 			low += absf(a[i] - base[i])
 			high += absf(b[i] - base[i])
+		for i in Metric.QUALITY_KEYS:
+			check(a[i] == base[i], "出来 2 軸はブレない")
 	check(high < low, "高スキルの方がブレが小さい: low=%.0f high=%.0f" % [low, high])
 	var perfect := Evaluation.apply_cooking_noise(base, 1.0, rng)
 	check(perfect == base, "skill=1.0 ならブレない")
 
 
 func test_comment() -> void:
-	var pref := PackedInt32Array()
-	pref.resize(Metric.COUNT)
-	pref.fill(30000)
-	var eval := pref.duplicate()
-	eval[Metric.Key.FAT] = 50000
-	eval[Metric.Key.APPEARANCE] = 45000
-	var weight := PackedFloat64Array([0.5, 0.5, 0.5, 1.2, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5])
+	var pref := vec([30000, 30000, 30000, 30000, 30000, 30000, 30000, 30000])
+	var weight := weights([0.5, 0.5, 0.5, 1.2, 0.5, 0.5, 1.0, 0.5])
+	var eval := vec([30000, 30000, 30000, 50000, 30000, 30000, 45000, 30000], 128, 128)
 	var comment := Evaluation.generate_comment(eval, pref, weight)
 	check(comment.contains("脂") and comment.contains("見た目"), "ズレの大きい軸が感想に出る: " + comment)
-	check(comment.begins_with("脂"), "重み付き差分が大きい順: " + comment)
-	var praise := Evaluation.generate_comment(pref, pref, weight)
+	check(comment.begins_with("脂"), "重み付きの不満度が大きい順: " + comment)
+	var praise := Evaluation.generate_comment(vec([30000, 30000, 30000, 30000, 30000, 30000, 30000, 30000], 128, 128), pref, weight)
 	check(praise.contains("脂がちょうどよかった"), "合っていれば重視する軸を褒める: " + praise)
+	var clumsy := Evaluation.generate_comment(vec([30000, 30000, 30000, 50000, 30000, 30000, 30000, 30000], 128, 20), pref, weight)
+	check(clumsy == "脂っこすぎた、味のバランスが微妙だった", "出来が低ければ不満に出る: " + clumsy)
+	# 特徴はどれも不満にも褒め言葉にもならない程度のずれ（4000）にしておく
+	var fine := Evaluation.generate_comment(vec([34000, 34000, 34000, 34000, 34000, 34000, 34000, 34000], 230, 128), pref, weight)
+	check(fine == "独創的で印象に残った", "出来が高ければ褒める（特徴の褒め言葉が足りないとき）: " + fine)
 
 
 func test_recipe_cost() -> void:
@@ -152,8 +202,8 @@ func test_economy() -> void:
 	var office: Dictionary = MasterData.customers_by_id["office"]
 	check(Economy.coverage(office, [false, false, false, false, true]) == 0.0, "会社員は深夜のみ営業だと来ない")
 	check(is_equal_approx(Economy.coverage(office, [true, true, true, true, true]), 1.0), "全時間帯ならカバレッジ 1.0")
-	check(Economy.reputation_delta(90.0, 20) > 0.0 and Economy.reputation_delta(40.0, 20) < 0.0, "満足度で評判が上下")
-	check(Economy.reputation_delta(90.0, 0) == 0.0, "誰も食べていなければ評判は動かない")
+	check(Economy.reputation_delta(900.0, 20) > 0.0 and Economy.reputation_delta(400.0, 20) < 0.0, "満足度（1000 点満点）で評判が上下")
+	check(Economy.reputation_delta(900.0, 0) == 0.0, "誰も食べていなければ評判は動かない")
 
 
 func test_simulation() -> void:

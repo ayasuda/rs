@@ -99,7 +99,7 @@ static func simulate(gs, rng: RandomNumberGenerator, skill_bonus: float = 0.0) -
 			var cooked := Evaluation.apply_cooking_noise(item["eval"], skill, rng)
 			var price_adj := Economy.price_adjust(item["price"], limit, sensitivity)
 			var score := clampf(
-				Evaluation.matching_score(cooked, cust["pref"], cust["weight"]) + price_adj, 0.0, 100.0)
+				Evaluation.matching_score(cooked, cust["pref"], cust["weight"]) + price_adj, 0.0, Balance.SCORE_MAX)
 			stat["served"] += 1
 			stat["score_sum"] += score
 			served_total += 1
@@ -139,9 +139,9 @@ static func simulate(gs, rng: RandomNumberGenerator, skill_bonus: float = 0.0) -
 	for sample in samples:
 		var cust: Dictionary = MasterData.customers_by_id[sample["cid"]]
 		var text := Evaluation.generate_comment(sample["cooked"], cust["pref"], cust["weight"])
-		if sample["price_adj"] <= -3.0:
+		if sample["price_adj"] <= -30.0:
 			text += "、値段は高く感じた"
-		elif sample["price_adj"] >= 3.0:
+		elif sample["price_adj"] >= 30.0:
 			text += "、この値段ならお得"
 		comments.append({
 			"customer": cust["name"], "recipe": sample["recipe"],
@@ -188,7 +188,7 @@ static func _menu_items(gs, skill: float) -> Array[Dictionary]:
 			"name": recipe["name"],
 			"price": int(entry["price"]),
 			"cost": Evaluation.recipe_cost(recipe),
-			"eval": Evaluation.apply_skill_boost(Evaluation.evaluate_recipe(recipe), skill),
+			"eval": Evaluation.apply_quality_penalty(Evaluation.evaluate_recipe(recipe), skill),
 			"sold": 0,
 		})
 	return items
