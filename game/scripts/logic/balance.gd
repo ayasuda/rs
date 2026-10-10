@@ -32,28 +32,34 @@ const INTERIOR_BONUS_PER_LEVEL := 0.07
 const INTERIOR_COSTS: Array[int] = [80000, 200000, 400000]  # レベル1〜3への改装費
 const INTERIOR_LABELS: Array[String] = ["居抜きのまま", "清潔感のある内装", "こだわりの内装", "評判の名店風"]
 
-# --- 調理技術（spec/recipe.md） ---
+# --- 調理技術（spec/recipe.md ステップ4：調理はレシピの再現） ---
 const START_SKILL := 0.5
-const SKILL_BOOST := 0.03          # skill=1.0 のとき全軸 +3%
-const SKILL_HARMONY_BOOST := 0.05  # skill=1.0 のとき調和性にさらに +5%
-const SKILL_NOISE := 0.10          # 仕上がりのブレ：±10% × (1 - skill)
+const SKILL_NOISE := 0.10            # 特徴 8 軸のブレ：±10% × (1 - skill)
+const SKILL_QUALITY_PENALTY := 0.30  # 出来 2 軸の減点：-30% × (1 - skill)
 const SKILL_GROWTH_PER_DAY := 0.005
 const TRAINING_COST := 30000
 const TRAINING_GAIN := 0.05
 const MINIGAME_MAX_BONUS := 0.15   # ミニゲームの精度でその日の技術に上乗せ
 
-# --- 満足度 ---
-# S = Σ w_i × (D - |r_i - h_i|) を 0〜100 に正規化するときの D。
-# 仕様の 65535 だと差がほとんど出ないので、バランス用に狭めている。
-const SCORE_RANGE := 18000.0
-const PRICE_SCORE_SCALE := 15.0  # 支払い上限に対する割安・割高の影響
-const PRICE_SCORE_MAX := 8.0
+# --- 出来 2 軸の算出（spec/recipe.md ステップ3。算出方法は仕様で tbd;） ---
+# 暫定：素材ごとの創作性・調和性の値を合算し、この値で 255 になるよう縮める。
+const QUALITY_RAW_FULL := 40000.0
+
+# --- 満足度（spec/recipe.md ステップ5、1000 点満点） ---
+const SCORE_MAX := 1000.0
+const FEATURE_POINTS := 800.0   # 特徴 8 軸の近さ
+const QUALITY_POINTS := 100.0   # 出来 2 軸、1 軸あたり
+const SATISFACTION_SIGMA := 6000.0  # 許容幅 σ（仕様で tbd;、初期値 6000）
+const PRICE_SCORE_SCALE := 150.0  # 支払い上限に対する割安・割高の影響
+const PRICE_SCORE_MAX := 80.0
 const OVERPRICE_DROP := 4.0      # 上限を 25% 超えると誰も買わない
 
 # --- 評判（基準 50、0〜100） ---
 const REP_INITIAL := 50.0
-const REP_NEUTRAL_SCORE := 70.0  # 平均満足度がこれより上なら評判が上がる
-const REP_GAIN := 0.12
+# 満足度の境目は、全レシピ × 全顧客の満足度分布の中での位置が、
+# 100 点満点だったころ（境目 70 点）とほぼ同じになるよう置いている。
+const REP_NEUTRAL_SCORE := 600.0  # 平均満足度がこれより上なら評判が上がる
+const REP_GAIN := 0.012
 const REP_MAX_STEP := 3.0
 const REP_FULL_SAMPLE := 8.0     # この人数に届かない日は変化を割り引く
 

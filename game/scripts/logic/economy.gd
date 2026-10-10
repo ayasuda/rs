@@ -65,14 +65,15 @@ static func reputation_delta(avg_score: float, served: int) -> float:
 	return step * minf(1.0, served / Balance.REP_FULL_SAMPLE)
 
 
+## 満足度（0〜1000）の言葉。閾値は Balance.REP_NEUTRAL_SCORE と同じ考え方で置いた暫定値。
 static func satisfaction_label(score: float) -> String:
-	if score >= 85.0:
+	if score >= 780.0:
 		return "大満足"
-	if score >= 75.0:
+	if score >= 670.0:
 		return "満足"
-	if score >= 65.0:
+	if score >= 570.0:
 		return "ふつう"
-	if score >= 50.0:
+	if score >= 440.0:
 		return "やや不満"
 	return "不満"
 

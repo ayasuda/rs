@@ -1,7 +1,7 @@
 extends Node
 ## ゲーム進行データの保持とセーブ／ロード（autoload: GameState）。
 
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2  # 2: 満足度を 1000 点満点に変更
 const MAX_RECIPES := 50
 const MAX_MENU := 3
 const MAX_TOPPINGS := 4
@@ -312,6 +312,7 @@ func from_dict(data: Dictionary) -> void:
 	history = []
 	for raw in data.get("history", []):
 		history.append({"day": int(raw["day"]), "profit": int(raw["profit"]), "served": int(raw["served"])})
-	last_result = data.get("last_result", {})
+	# 版 1 の前日結果は満足度が 100 点満点なので、表示が崩れないよう捨てる
+	last_result = data.get("last_result", {}) if int(data.get("version", 1)) >= 2 else {}
 	game_over = bool(data.get("game_over", false))
 	next_recipe_seq = int(data.get("next_recipe_seq", 1))
